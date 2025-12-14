@@ -28,4 +28,4 @@ MODEL_DIR=../OLMo/hf_ckpts
 MODEL=OLMo2-1B-stage2-seed42-SEXMH-L5
 STEP=step23852-unsharded
 TASK=hybridqa:none
-olmes --task $TASK --batch-size 10000 --model $MODEL_DIR/$MODEL/$STEP --model-args "{\"model_path\": \"$MODEL_DIR/$MODEL/$STEP\", \"max_length\": 4096, \"model_type\": \"vllm\"}"  --output-dir $OUTPUT_DIR/${MODEL//\//_}/$TASK --save-raw-requests true --num-workers 1 --gpus 1
+CUDA_VISIBLE_DEVICES=0 olmes --task $TASK --batch-size 10000 --model $MODEL_DIR/$MODEL/$STEP --model-args "{\"model_path\": \"$MODEL_DIR/$MODEL/$STEP\", \"max_length\": 4096, \"model_type\": \"vllm\"}"  --output-dir $OUTPUT_DIR/${MODEL//\//_}/$TASK --save-raw-requests true --num-workers 1 --gpus 1

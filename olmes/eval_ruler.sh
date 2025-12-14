@@ -36,21 +36,21 @@ do
 done
 
 
-CTX_LEN=8192
-for TASK_ID in "qa" "niah" "multi_hop_tracing" "aggregation" 
-do
-    TASK="ruler_${TASK_ID}__${CTX_LEN}::suite"
-    MODEL_STEP=$MODEL/$STEP
-    olmes --task $TASK --batch-size 10000 --model $MODEL_DIR/$MODEL_STEP --model-args "{\"model_path\": \"$MODEL_DIR/$MODEL_STEP\", \"max_length\": ${CTX_LEN}, \"model_type\": \"vllm\", \"rope_scaling\": {\"rope_type\": \"yarn\", \"factor\": 2.0, \"original_max_position_embeddings\": 4096}}"  --output-dir $OUTPUT_DIR/${MODEL//\//_}/$TASK --save-raw-requests true --num-workers 1 --gpus 1
-    break
-done
+# CTX_LEN=8192
+# for TASK_ID in "qa" "niah" "multi_hop_tracing" "aggregation" 
+# do
+#     TASK="ruler_${TASK_ID}__${CTX_LEN}::suite"
+#     MODEL_STEP=$MODEL/$STEP
+#     CUDA_VISIBLE_DEVICES=0 olmes --task $TASK --batch-size 10000 --model $MODEL_DIR/$MODEL_STEP --model-args "{\"model_path\": \"$MODEL_DIR/$MODEL_STEP\", \"max_length\": ${CTX_LEN}, \"model_type\": \"vllm\", \"rope_scaling\": {\"rope_type\": \"yarn\", \"factor\": 2.0, \"original_max_position_embeddings\": 4096}}"  --output-dir $OUTPUT_DIR/${MODEL//\//_}/$TASK --save-raw-requests true --num-workers 1 --gpus 1
+#     break
+# done
 
 
-CTX_LEN=16384
-for TASK_ID in "qa" "niah" "multi_hop_tracing" "aggregation" 
-do
-    TASK="ruler_${TASK_ID}__${CTX_LEN}::suite"
-    MODEL_STEP=$MODEL/$STEP
-    olmes --task $TASK --batch-size 10000 --model $MODEL_DIR/$MODEL_STEP --model-args "{\"model_path\": \"$MODEL_DIR/$MODEL_STEP\", \"max_length\": ${CTX_LEN}, \"model_type\": \"vllm\", \"rope_scaling\": {\"rope_type\": \"yarn\", \"factor\": 4.0, \"original_max_position_embeddings\": 4096}}"  --output-dir $OUTPUT_DIR/${MODEL//\//_}/$TASK --save-raw-requests true --num-workers 1 --gpus 1
-    break
-done
+# CTX_LEN=16384
+# for TASK_ID in "qa" "niah" "multi_hop_tracing" "aggregation" 
+# do
+#     TASK="ruler_${TASK_ID}__${CTX_LEN}::suite"
+#     MODEL_STEP=$MODEL/$STEP
+#     CUDA_VISIBLE_DEVICES=0 olmes --task $TASK --batch-size 10000 --model $MODEL_DIR/$MODEL_STEP --model-args "{\"model_path\": \"$MODEL_DIR/$MODEL_STEP\", \"max_length\": ${CTX_LEN}, \"model_type\": \"vllm\", \"rope_scaling\": {\"rope_type\": \"yarn\", \"factor\": 4.0, \"original_max_position_embeddings\": 4096}}"  --output-dir $OUTPUT_DIR/${MODEL//\//_}/$TASK --save-raw-requests true --num-workers 1 --gpus 1
+#     break
+# done

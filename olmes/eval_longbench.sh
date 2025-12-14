@@ -23,12 +23,14 @@ PY_BIN=${CONDA_ROOT_DIR}/${SUFFIX}/bin
 CURRENT_DATE=$(date +"%y%m%d")
 OUTPUT_DIR=results_hist/${CURRENT_DATE}_results_graph
 
+CTX_LEN=16384
 MODEL_DIR=../OLMo/hf_ckpts
 MODEL=OLMo2-1B-stage2-seed42-SEXMH-L5
 STEP=step23852-unsharded
-for TASK_NAME in "connectivity" "cycle" "flow" "shortest_path"
+
+for TASK_NAME in "2wikimqa" "musique" "multifieldqa_en" "narrativeqa" "gov_report" "qmsum" "trec" "triviaqa"
 do
-    TASK="nlgraph_${TASK_NAME}:easy::none"
-    CUDA_VISIBLE_DEVICES=0 olmes --task $TASK --batch-size 10000 --model $MODEL_DIR/$MODEL/$STEP --model-args "{\"model_path\": \"$MODEL_DIR/$MODEL/$STEP\", \"max_length\": 4096, \"model_type\": \"vllm\"}"  --output-dir $OUTPUT_DIR/${MODEL//\//_}/$TASK --save-raw-requests true --num-workers 1 --gpus 1
+    TASK="${TASK_NAME}::longbench"
+    CUDA_VISIBLE_DEVICES=0 olmes --task $TASK --batch-size 10000 --model $MODEL_DIR/$MODEL/$STEP --model-args "{\"model_path\": \"$MODEL_DIR/$MODEL/$STEP\", \"max_length\": ${CTX_LEN}, \"model_type\": \"vllm\", \"rope_scaling\": {\"rope_type\": \"yarn\", \"factor\": 4.0, \"original_max_position_embeddings\": 4096}}"  --output-dir $OUTPUT_DIR/${MODEL//\//_}/$TASK --save-raw-requests true --num-workers 1 --gpus 1
     break
 done
