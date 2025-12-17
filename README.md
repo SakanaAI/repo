@@ -12,10 +12,10 @@
     <!-- <a href="https://arxiv.org/abs/xxxx.xxxxx"><strong>Explore the docs »</strong></a> -->
     <!-- <br /> -->
     <br />
-    <a href="https://arxiv.org/abs/2512.14391"><img src="https://img.shields.io/badge/arXiv-2310.xxxxx-b31b1b.svg?style=flat-square" alt="arXiv"></a>
+    <a href="https://arxiv.org/abs/2512.14391"><img src="https://img.shields.io/badge/arXiv-2512.14391-b31b1b.svg?style=flat-square" alt="arXiv"></a>
     <a href="https://huggingface.co/SakanaAI/RePo-OLMo2-1B-stage2-L5"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Models-blue?style=flat-square" alt="Hugging Face"></a>
     <!-- <a href="https://colab.research.google.com/"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a> -->
-    <a href="LICENSE"><img src="https://img.shields.io/github/license/your_username/repo_name?style=flat-square" alt="License"></a>
+    <!-- <a href="LICENSE"><img src="https://img.shields.io/github/license/SakanaAI/repo?style=flat-square" alt="License"></a> -->
   </p>
 </div>
 
