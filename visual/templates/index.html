@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Position Visualizer</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom floating message style */
+        #floating-msg {
+            transition: all 0.3s ease;
+            opacity: 0;
+            pointer-events: none; /* Let clicks pass through if it overlaps */
+        }
+        #floating-msg.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans p-6">
+
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-indigo-700">Model Context Visualizer</h1>
+
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Input Context</label>
+                        <textarea id="sentenceInput" rows="3"
+                            class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none resize-y" 
+                            placeholder="Enter text...">Please revise the following tokens:
+Input: A B C D E F G
+Output: G F E D C B A
+</textarea>
+                    </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Layer Index</label>
+                <select id="layerSelect" class="w-full p-2 border border-gray-300 rounded bg-white">
+                    <option value="5">Layer 5</option>
+                    <option value="6">Layer 6</option>
+                    <option value="7">Layer 7</option>
+                    <option value="8">Layer 8</option>
+                    <option value="9">Layer 9</option>
+                    <option value="10">Layer 10</option>
+                    <option value="11">Layer 11</option>
+                    <option value="12">Layer 12</option>
+                    <option value="13">Layer 13</option>
+                    <option value="14">Layer 14</option>
+                    <option value="15">Layer 15</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Attention Head</label>
+                <select id="headSelect" class="w-full p-2 border border-gray-300 rounded bg-white">
+                    <option value="0">Head 0</option>
+                    <option value="1">Head 1</option>
+                    <option value="2">Head 2</option>
+                    <option value="3">Head 3</option>
+                    <option value="4">Head 4</option>
+                    <option value="5">Head 5</option>
+                    <option value="6">Head 6</option>
+                    <option value="7">Head 7</option>
+                    <option value="8">Head 8</option>
+                    <option value="9">Head 9</option>
+                    <option value="10">Head 10</option>
+                    <option value="11">Head 11</option>
+                    <option value="12">Head 12</option>
+                    <option value="13">Head 13</option>
+                    <option value="14">Head 14</option>
+                    <option value="15">Head 15</option>
+                </select>
+            </div>
+
+            <button onclick="fetchData()" class="md:col-span-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition shadow-sm">
+                Compute & Visualize
+            </button>
+        </div>
+
+        <div class="relative bg-white p-2 rounded-lg shadow-lg border border-gray-100" style="min-height: 550px;">
+            
+            <button onclick="resetView()" class="absolute top-0 right-4 z-20 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold py-1 px-3 rounded border border-gray-300 transition">
+                Reset Selection
+            </button>
+
+            <div id="chartDiv" style="width: 100%; height: 550px;"></div>
+
+            <div id="floating-msg" class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-6 py-4 rounded shadow-xl max-w-lg z-10 text-center">
+                <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Local Context (i-k to i+k)</p>
+                <p id="context-text" class="text-lg font-medium">Click a data point to see context...</p>
+            </div>
+        </div>
+    </div>
+
+<script>
+        // --- CONFIGURATION ---
+        let currentData = [];
+        const K = 8; // Window size [i-K, i+K]
+
+        // Load default data on startup
+        document.addEventListener('DOMContentLoaded', fetchData);
+
+        // --- 1. FETCH DATA FROM BACKEND ---
+        async function fetchData() {
+            const sentence = document.getElementById('sentenceInput').value;
+            const layer = document.getElementById('layerSelect').value;
+            const head = document.getElementById('headSelect').value;
+
+            // Simple loading state
+            const btn = document.querySelector('button[onclick="fetchData()"]');
+            const originalText = btn.innerText;
+            btn.innerText = "Loading...";
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/process_sentence', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sentence, layer, head })
+                });
+                
+                const result = await response.json();
+                
+                if(result.status === 'success'){
+                    currentData = result.data;
+                    renderChart(currentData);
+                    // Hide message if it was visible from previous chart
+                    document.getElementById('floating-msg').classList.remove('visible');
+                } else {
+                    alert("Error: " + result.message);
+                }
+
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                alert("Failed to connect to backend.");
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // --- 2. RENDER CHART ---
+        function renderChart(data) {
+            const xVals = data.map(d => d.x);
+            const yVals = data.map(d => d.y);
+            const tVals = data.map(d => d.t);
+
+            const trace = {
+                x: xVals,
+                y: yVals,
+                text: tVals, 
+                mode: 'markers',
+                marker: {
+                    size: 8,
+                    color: '#3b82f6', // Tailwind Blue-500
+                    opacity: 0.7,
+                    line: { width: 0 }
+                },
+                type: 'scatter',
+                hoverinfo: 'text+x+y'
+            };
+
+            const layout = {
+                title: { text: 'Assigned vs Original Positions' },
+                xaxis: { title: 'Original Positions in Context' },
+                yaxis: { title: 'Assigned Positions' },
+                hovermode: 'closest',
+                dragmode: 'zoom',
+                margin: { t: 40, r: 40, b: 40, l: 60 }
+            };
+
+            const config = { responsive: true, displayModeBar: true };
+
+            Plotly.newPlot('chartDiv', [trace], layout, config);
+
+            // --- ATTACH EVENTS ---
+            const plotDiv = document.getElementById('chartDiv');
+
+            // Click Event: Highlight
+            plotDiv.on('plotly_click', function(data) {
+                if(data.points.length > 0) {
+                    const pointIndex = data.points[0].pointIndex;
+                    highlightContext(pointIndex);
+                }
+            });
+
+            // Double Click Event: Reset
+            plotDiv.on('plotly_doubleclick', function() {
+                // We wrap resetView in a slight timeout to ensure Plotly's zoom reset happens first
+                setTimeout(resetView, 100);
+            });
+        }
+
+        // --- 3. HIGHLIGHT LOGIC ---
+        function highlightContext(centerIndex) {
+            const n = currentData.length;
+            
+            // Define range
+            const start = Math.max(0, centerIndex - K);
+            const end = Math.min(n - 1, centerIndex + K);
+
+            // Arrays for new styles
+            // Default state: Gray and small
+            const colors = new Array(n).fill('rgba(200, 200, 200, 0.4)'); 
+            const sizes = new Array(n).fill(6); 
+            const lines = new Array(n).fill({width: 0});
+
+            let contextTokens = [];
+
+            // Loop through selected window
+            for (let i = start; i <= end; i++) {
+                colors[i] = '#ef4444'; // Red-500
+                sizes[i] = 14;         // Highlight size
+                contextTokens.push(currentData[i].t);
+            }
+
+            // Update Plotly (Restyle is efficient)
+            Plotly.restyle('chartDiv', {
+                'marker.color': [colors],
+                'marker.size': [sizes]
+            });
+
+            // Update Floating Message
+            const msgBox = document.getElementById('floating-msg');
+            const txtBox = document.getElementById('context-text');
+            
+            txtBox.innerText = `"${contextTokens.join(" ")}"`;
+            msgBox.classList.add('visible');
+        }
+
+        // --- 4. RESET LOGIC ---
+        function resetView() {
+            if(currentData.length === 0) return;
+
+            const n = currentData.length;
+            
+            // Reset to default blue and size 8
+            Plotly.restyle('chartDiv', {
+                'marker.color': [new Array(n).fill('#3b82f6')],
+                'marker.size': [new Array(n).fill(8)]
+            });
+
+            // Hide Floating Message
+            document.getElementById('floating-msg').classList.remove('visible');
+        }
+    </script>
+</body>
+</html>

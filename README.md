@@ -33,6 +33,12 @@
   </ol>
 </details>
 
+## 🔥 News
+* **[2025.12]** We add an interactive demo to visualize the assigned positions. Please find it in `./visual`!
+* **[2025.12]** We have released the [training code](#-training) and [evaluation scripts](#-usage)!
+* **[2025.12]** Pre-trained models (based on OLMo-2 1B) are now available on [Hugging Face](https://huggingface.co/SakanaAI/RePo-OLMo2-1B-stage2-L5).
+* **[2025.12]** The paper "RePo: Language Models with Context Re-Positioning" is released on [arXiv](https://arxiv.org/abs/2512.14391).
+
 ## 🧩 Abstract
 
 <!-- ![Method Overview](https://via.placeholder.com/800x300?text=Model+Architecture+or+Demo+GIF) -->
