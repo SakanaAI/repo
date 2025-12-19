@@ -39,7 +39,7 @@
             </div>
 
             <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100 leading-tight space-y-1">
-                <p><strong>RePo</strong> aims to re-structure context like humans by assigning non-linear positions in dense space.</p>
+                <p><strong>RePo</strong> aims to restructure context in a human-like manner by assigning non-linear positions in a dense space. It is pre-trained on general data and can well capture the internal structure and contextual dependencies of the input.</p>
                 <div class="flex gap-2 pt-1 border-t border-gray-200 mt-1">
                     <span>📚</span>
                     <a href="https://www.arxiv.org/abs/2512.14391" target="_blank" class="text-blue-600 hover:underline">Paper</a>
@@ -54,9 +54,23 @@
                 <label class="text-xs font-semibold text-gray-700 uppercase mb-1">Input Context</label>
                 <textarea id="sentenceInput" 
                     class="w-full flex-1 p-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 outline-none resize-none bg-gray-50" 
-                    placeholder="Enter text...">Please revise the following tokens:
-Input: A B C D E F G
-Output: G F E D C B A
+                    placeholder="Enter text...">Below is a log of user scores from a gaming session. Please calculate the arithmetic mean (average) of the 'Score' column.
+
+| User_ID | Username       | Score | Region |
+|---------|----------------|-------|--------|
+| 001     | Player_B1      | 10    | EU     |
+| 002     | Player_C2      | 20    | AS     |
+| 003     | Player_D3      | 10    | SA     |
+| 004     | Player_E4      | 20    | OC     |
+| 005     | Player_F5      | 10    | NA     |
+| 006     | Player_G6      | 20    | EU     |
+| 007     | Player_H7      | 10    | AS     |
+| 008     | Player_I8      | 20    | SA     |
+| 009     | Player_J9      | 10    | OC     |
+| 010     | Player_K10     | 20    | NA     |
+
+Question: What is the average of the scores listed above?
+Answer:
 </textarea>
             </div>
 
