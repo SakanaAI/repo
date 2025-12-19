@@ -1,7 +1,11 @@
 from flask import Flask, render_template, request, jsonify
 import numpy as np
-from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
 import torch
+
+import sys
+sys.path.append("../transformers/src") 
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
+
 
 app = Flask(__name__)
 CKPT_NAME="SakanaAI/RePo-OLMo2-1B-stage2-L5"
@@ -33,6 +37,7 @@ class RePo:
             inputs = self.tokenizer(prompt, return_tensors="pt")
             tok_ids = inputs['input_ids']
             toks = self.tokenizer.convert_ids_to_tokens(tok_ids.squeeze(0), skip_special_tokens=False)
+            toks = [t.replace("Ġ", " ").replace("Ċ", "\n") for t in toks]
             n_toks = len(toks)
             inputs = {k: v.to(self.device) for k, v in inputs.items()}
             outputs = self.model(**inputs, return_dict=True, output_pred_indices=True)
