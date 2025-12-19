@@ -72,12 +72,12 @@ We provide pre-trained weights on Hugging Face.
     # in ./repo
     conda create -n olmes python=3.11
 
-    ### enable only if you have CUDA > 12.4
+    ### Important: enable only if you have CUDA > 12.4, this is critical for the compile of vLLM
     # conda install -c nvidia/label/cuda-12.4.0 cuda-toolkit
+    # pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu124
 
     ### install torch
-    please adjust --index-url according to your CUDA
-    pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu124
+    pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0
 
     ### install vLLM with RePo
     cd vllm
