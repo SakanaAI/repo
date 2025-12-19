@@ -24,6 +24,7 @@
 <details>
   <summary>Table of Contents</summary>
   <ol>
+    <li><a href="#-news">News</a></li>
     <li><a href="#-abstract">Abstract</a></li>
     <li><a href="#-installation">Installation</a></li>
     <li><a href="#-usage">Usage</a></li>
@@ -34,6 +35,7 @@
 </details>
 
 ## 🔥 News
+* **[2025.12]** Our demo is now running on [huggingface/spaces](https://huggingface.co/spaces/huayangli/repo-app).
 * **[2025.12]** We add an interactive demo to visualize the assigned positions. Please find it in `./visual`!
 * **[2025.12]** We have released the [training code](#-training) and [evaluation scripts](#-usage)!
 * **[2025.12]** Pre-trained models (based on OLMo-2 1B) are now available on [Hugging Face](https://huggingface.co/SakanaAI/RePo-OLMo2-1B-stage2-L5).
