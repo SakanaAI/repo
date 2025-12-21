@@ -32,6 +32,7 @@ from transformers import PretrainedConfig
 from vllm.model_executor.custom_op import CustomOp
 from vllm.platforms import current_platform
 
+
 if current_platform.is_cuda():
     from vllm.vllm_flash_attn.layers.rotary import apply_rotary_emb
 
@@ -130,7 +131,7 @@ class RotaryEmbedding(CustomOp):
         inv_freq = self._compute_inv_freq(self.base)
         if position_ids is not None:
             t = position_ids
-            inv_freq = inv_freq.to(position_ids.device)
+            inv_freq = inv_freq.to(position_ids.device).to(position_ids.dtype)
         else:
             t = torch.arange(self.max_position_embeddings, dtype=torch.float)
 
@@ -151,14 +152,14 @@ class RotaryEmbedding(CustomOp):
         """A PyTorch-native implementation of forward()."""
         if offsets is not None:
             positions = positions + offsets
-        positions = positions.flatten()
         num_tokens = positions.shape[0]
         if is_dynamic_pe:
             position_shape = positions.shape
-            positions = positions.view(-1)
+            positions = positions.flatten()
             cos_sin = self._compute_cos_sin_cache(positions)
             cos_sin = cos_sin.reshape(*position_shape, cos_sin.shape[-1])
         else:
+            positions = positions.flatten()
             cos_sin = self.cos_sin_cache.index_select(0, positions)
         cos, sin = cos_sin.chunk(2, dim=-1)
 
@@ -179,6 +180,7 @@ class RotaryEmbedding(CustomOp):
             key_rot = _apply_rotary_emb_torch(key_rot, cos, sin,
                                               self.is_neox_style)
             key = torch.cat((key_rot, key_pass), dim=-1).reshape(key_shape)
+
         return query, key
 
     def forward_cuda(
@@ -444,7 +446,7 @@ class LinearScalingRotaryEmbedding(RotaryEmbedding):
             max_len = self.max_position_embeddings * scaling_factor
             if position_ids is not None:
                 t = position_ids
-                inv_freq = inv_freq.to(position_ids.device)
+                inv_freq = inv_freq.to(position_ids.device).to(position_ids.dtype)
             else:
                 t = torch.arange(max_len, dtype=torch.float)
             t = t / scaling_factor
@@ -642,7 +644,7 @@ class YaRNScalingRotaryEmbedding(RotaryEmbedding):
         inv_freq = self._compute_inv_freq(self.scaling_factor)
         if position_ids is not None:
             t = position_ids
-            inv_freq = inv_freq.to(position_ids.device)
+            inv_freq = inv_freq.to(position_ids.device).to(position_ids.dtype)
         else:
             t = torch.arange(self.max_position_embeddings * self.scaling_factor,
                             dtype=torch.float32)

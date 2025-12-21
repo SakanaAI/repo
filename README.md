@@ -115,6 +115,7 @@ Please download the checkpoints from [huggingface](https://huggingface.co/huayan
 
 ```bash
 cd olmes
+python scripts/hf_download.py # only download for the first use
 bash eval_ruler.sh
 ```
 
