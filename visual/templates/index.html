@@ -7,28 +7,22 @@
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Float msg style */
         #floating-msg {
             transition: opacity 0.3s ease;
             opacity: 0;
             pointer-events: none;
         }
         #floating-msg.visible { opacity: 1; }
-        
-        /* Ensure Plotly fills the container */
-        .js-plotly-plot, .plot-container {
-            width: 100% !important;
-            height: 100% !important;
-        }
+        .js-plotly-plot, .plot-container { width: 100% !important; height: 100% !important; }
     </style>
 </head>
-<body class="h-screen w-screen overflow-hidden bg-gray-50 text-gray-800 font-sans flex">
+<body class="h-screen w-screen overflow-hidden bg-gray-50 text-gray-800 font-sans flex flex-col md:flex-row">
 
-    <aside class="w-80 (min-w-[320px]) flex flex-col bg-white border-r border-gray-200 shadow-lg z-20 shrink-0">
+    <aside class="w-full md:w-80 md:h-full max-h-[40vh] md:max-h-full flex flex-col bg-white border-b md:border-b-0 md:border-r border-gray-200 shadow-lg z-20 shrink-0 overflow-hidden">
         
-        <div class="p-4 border-b border-gray-100">
-            <div class="flex justify-between items-center mb-2">
-                <h2 class="text-xl font-bold text-indigo-700">RePo Visualizer</h2>
+        <div class="p-3 md:p-4 border-b border-gray-100 shrink-0">
+            <div class="flex justify-between items-center mb-1 md:mb-2">
+                <h2 class="text-lg md:text-xl font-bold text-indigo-700">RePo Visualizer</h2>
                 <div id="queue-indicator" class="hidden bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-full border border-blue-200 flex items-center gap-1">
                     <span class="relative flex h-1.5 w-1.5">
                       <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
@@ -37,9 +31,8 @@
                     <span id="queue-text">Wait: 0</span>
                 </div>
             </div>
-
-            <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100 leading-tight space-y-1">
-                <p><strong>RePo</strong> aims to restructure context, much like humans do, by assigning non-linear positions in a dense space. It is pre-trained on general data and can effectively capture the internal structure and contextual dependencies of the input.</p>
+            <div class="hidden md:block text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100 leading-tight space-y-1">
+                <p><strong>RePo</strong> aims to restructure context by assigning non-linear positions in a dense space.</p>
                 <div class="flex gap-2 pt-1 border-t border-gray-200 mt-1">
                     <span>📚</span>
                     <a href="https://www.arxiv.org/abs/2512.14391" target="_blank" class="text-blue-600 hover:underline">Paper</a>
@@ -48,12 +41,11 @@
             </div>
         </div>
 
-        <div class="p-4 flex flex-col gap-3 flex-1 overflow-y-auto">
-            
-            <div class="flex flex-col flex-1 min-h-[100px]">
+        <div class="p-3 md:p-4 flex flex-col gap-3 flex-1 overflow-y-auto">
+            <div class="flex flex-col flex-1 min-h-0">
                 <label class="text-xs font-semibold text-gray-700 uppercase mb-1">Input Context</label>
                 <textarea id="sentenceInput" 
-                    class="w-full flex-1 p-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 outline-none resize-none bg-gray-50" 
+                    class="w-full flex-1 p-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 outline-none resize-none bg-gray-50 min-h-[80px]" 
                     placeholder="Enter text...">Below is a log of user scores from a gaming session. Please calculate the arithmetic mean (average) of the 'Score' column.
 
 | User_ID | Username       | Score | Region |
@@ -74,7 +66,7 @@ Answer:
 </textarea>
             </div>
 
-            <div class="grid grid-cols-2 gap-2">
+            <div class="grid grid-cols-2 gap-2 shrink-0">
                 <div>
                     <label class="text-xs font-semibold text-gray-700 uppercase mb-1">Layer</label>
                     <select id="layerSelect" class="w-full p-1.5 text-sm border border-gray-300 rounded bg-white">
@@ -114,28 +106,33 @@ Answer:
                 </div>
             </div>
 
-            <button onclick="fetchData()" id="computeBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm transition shadow-sm flex justify-center items-center gap-2">
+            <button onclick="fetchData()" id="computeBtn" class="shrink-0 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm transition shadow-sm flex justify-center items-center gap-2">
                 <span>Compute & Visualize</span>
             </button>
         </div>
     </aside>
 
-    <main class="flex-1 flex flex-col relative h-full">
+    <main class="flex-1 flex flex-col relative min-h-0 overflow-hidden bg-gray-100">
         
-        <div id="truncation-warning" class="hidden w-full bg-yellow-100 border-b border-yellow-200 text-yellow-800 text-xs px-4 py-2 flex items-center justify-between">
-            <span><strong>Notice:</strong> Input truncated to 512 tokens for performance.</span>
+        <div id="truncation-warning" class="hidden w-full bg-yellow-100 border-b border-yellow-200 text-yellow-800 text-xs px-4 py-2 flex items-center justify-between z-20">
+            <span><strong>Notice:</strong> Input truncated.</span>
             <button onclick="this.parentElement.classList.add('hidden')" class="text-yellow-900 font-bold hover:text-yellow-600">×</button>
         </div>
 
-        <div class="flex-1 relative bg-white overflow-hidden p-2">
-            <button onclick="resetView()" class="absolute top-0 right-4 z-10 bg-white/90 hover:bg-gray-100 text-gray-600 text-xs font-bold py-1 px-3 rounded border border-gray-300 shadow-sm transition">
-                Reset Selection
-            </button>
+        <div class="flex-1 relative bg-white w-full h-full p-2">
+            <div class="absolute top-2 right-4 z-10 flex gap-2">
+                <button id="viewToggleBtn" onclick="toggleView()" class="hidden bg-white/90 hover:bg-gray-100 text-indigo-700 text-xs font-bold py-1 px-3 rounded border border-indigo-200 shadow-sm transition">
+                    Global View
+                </button>
+                <button onclick="resetHighlight()" class="bg-white/90 hover:bg-gray-100 text-gray-600 text-xs font-bold py-1 px-3 rounded border border-gray-300 shadow-sm transition">
+                    Clear Highlight
+                </button>
+            </div>
 
             <div id="chartDiv" class="w-full h-full"></div>
 
-            <div id="floating-msg" class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-gray-900/90 backdrop-blur-sm text-white px-4 py-3 rounded shadow-xl max-w-lg z-20 text-center pointer-events-none">
-                <p class="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Local Context (i-k to i+k)</p>
+            <div id="floating-msg" class="absolute top-10 left-1/2 transform -translate-x-1/2 bg-gray-900/90 backdrop-blur-sm text-white px-4 py-3 rounded shadow-xl max-w-[90%] w-auto z-20 text-center pointer-events-none">
+                <p class="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Local Context</p>
                 <p id="context-text" class="text-sm font-medium leading-relaxed">Click a point...</p>
             </div>
         </div>
@@ -143,13 +140,13 @@ Answer:
 
 <script>
         let currentData = [];
+        let savedRange = null; // Store the "Focused" range calculated by backend
+        let isFocused = true;  // Track current state
         const K = 8; 
 
         document.addEventListener('DOMContentLoaded', () => {
             fetchData();
             setInterval(updateQueueStatus, 2000);
-            
-            // Ensure chart resizes if window resizes
             window.onresize = function() {
                 Plotly.Plots.resize(document.getElementById('chartDiv'));
             };
@@ -203,7 +200,22 @@ Answer:
                 
                 if (response.ok && result.status === 'success') {
                     currentData = result.data;
-                    renderChart(currentData);
+                    savedRange = result.suggested_range; // Save range
+                    
+                    // Logic to set initial state
+                    const toggleBtn = document.getElementById('viewToggleBtn');
+                    
+                    if (savedRange) {
+                        isFocused = true;
+                        toggleBtn.classList.remove('hidden'); // Show button only if outliers exist
+                        renderChart(currentData, savedRange);
+                        updateToggleButtonText();
+                    } else {
+                        isFocused = false;
+                        toggleBtn.classList.add('hidden'); // Hide button if no outliers
+                        renderChart(currentData, null);
+                    }
+
                     document.getElementById('floating-msg').classList.remove('visible');
                     
                     const warningEl = document.getElementById('truncation-warning');
@@ -225,7 +237,7 @@ Answer:
             }
         }
 
-        function renderChart(data) {
+        function renderChart(data, yRange) {
             const xVals = data.map(d => d.x);
             const yVals = data.map(d => d.y);
             const tVals = data.map(d => d.t);
@@ -233,15 +245,17 @@ Answer:
             const trace = {
                 x: xVals, y: yVals, text: tVals, 
                 mode: 'markers',
-                marker: { size: 6, color: '#4f46e5', opacity: 0.6, line: { width: 0 } }, // Indigio-600
+                marker: { size: 6, color: '#4f46e5', opacity: 0.6, line: { width: 0 } }, 
                 type: 'scatter', hoverinfo: 'text+x+y'
             };
 
-            // Calculate tighter margins to maximize screen space
             const layout = {
                 title: { text: 'Position Analysis', font: {size: 14} },
                 xaxis: { title: 'Token Index' },
-                yaxis: { title: 'Assigned Position' },
+                yaxis: { 
+                    title: 'Assigned Position',
+                    range: yRange ? yRange : null
+                },
                 hovermode: 'closest', dragmode: 'zoom',
                 margin: { t: 30, r: 20, b: 40, l: 50 },
                 autosize: true
@@ -254,7 +268,7 @@ Answer:
             plotDiv.on('plotly_click', (data) => {
                 if(data.points.length > 0) highlightContext(data.points[0].pointIndex);
             });
-            plotDiv.on('plotly_doubleclick', () => setTimeout(resetView, 100));
+            plotDiv.on('plotly_doubleclick', () => setTimeout(resetHighlight, 100));
         }
 
         function highlightContext(centerIndex) {
@@ -266,7 +280,7 @@ Answer:
             let contextTokens = [];
 
             for (let i = start; i <= end; i++) {
-                colors[i] = '#ef4444'; // Red Highlight
+                colors[i] = '#ef4444'; 
                 sizes[i] = 12; 
                 contextTokens.push(currentData[i].t);
             }
@@ -276,7 +290,7 @@ Answer:
             document.getElementById('floating-msg').classList.add('visible');
         }
 
-        function resetView() {
+        function resetHighlight() {
             if(currentData.length === 0) return;
             const n = currentData.length;
             Plotly.restyle('chartDiv', {
@@ -284,6 +298,40 @@ Answer:
                 'marker.size': [new Array(n).fill(6)]
             });
             document.getElementById('floating-msg').classList.remove('visible');
+        }
+
+        // Toggle View Logic
+        function toggleView() {
+            if (!savedRange) return; // Should not happen if button is hidden, but safety first
+
+            if (isFocused) {
+                // Currently Focused, User wants Global
+                Plotly.relayout('chartDiv', { 
+                    'yaxis.autorange': true 
+                });
+                isFocused = false;
+            } else {
+                // Currently Global, User wants Focused
+                Plotly.relayout('chartDiv', { 
+                    'yaxis.range': savedRange,
+                    'yaxis.autorange': false 
+                });
+                isFocused = true;
+            }
+            updateToggleButtonText();
+        }
+
+        function updateToggleButtonText() {
+            const btn = document.getElementById('viewToggleBtn');
+            if (isFocused) {
+                btn.innerText = "Global View";
+                btn.classList.add('text-indigo-700', 'border-indigo-200');
+                btn.classList.remove('text-gray-600', 'border-gray-300');
+            } else {
+                btn.innerText = "Focused View";
+                btn.classList.add('text-gray-600', 'border-gray-300');
+                btn.classList.remove('text-indigo-700', 'border-indigo-200');
+            }
         }
     </script>
 </body>

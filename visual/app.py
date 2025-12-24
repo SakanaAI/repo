@@ -6,12 +6,8 @@ import sys
 import queue
 import threading
 from concurrent.futures import Future
-import sys
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
-
-
-app = Flask(__name__)
-CKPT_NAME="SakanaAI/RePo-OLMo2-1B-stage2-L5"
+from collections import OrderedDict
 
 app = Flask(__name__)
 CKPT_NAME = "SakanaAI/RePo-OLMo2-1B-stage2-L5"
@@ -36,9 +32,8 @@ class RePo:
             self.device = torch.device("cpu")
         self.model = model
         self.start_layer = start_layer
-        self.prev = None
-        self.prev_indices = None
-        self.prev_tok = None
+        self.cache = OrderedDict()
+        self.cache_size = 8
     
     @torch.no_grad()
     def forward(self, prompt, layer, head, max_tokens=512):
@@ -53,9 +48,9 @@ class RePo:
                 inputs['attention_mask'] = inputs['attention_mask'][:, :max_tokens]
             prompt = self.tokenizer.decode(inputs['input_ids'][0], skip_special_tokens=False)
 
-        if self.prev == prompt:
-            pred_indices = self.prev_indices
-            toks = self.prev_tok
+        if prompt in self.cache:
+            pred_indices, toks = self.cache[prompt]
+            self.cache.move_to_end(prompt)
         else:
             inputs = self.tokenizer(prompt, return_tensors="pt")
             tok_ids = inputs['input_ids']
@@ -66,9 +61,9 @@ class RePo:
             outputs = self.model(**inputs, return_dict=True, output_pred_indices=True)
             pred_indices = outputs.pred_indices 
             pred_indices = [it.data.squeeze(0).reshape(-1, n_toks).tolist() for it in pred_indices]
-            self.prev = prompt
-            self.prev_indices = pred_indices
-            self.prev_tok = toks
+            self.cache[prompt] = (pred_indices, toks)
+            if len(self.cache) > self.cache_size:
+                self.cache.popitem(last=False)
         
         data = []
         # Safety check for layer bounds
@@ -131,10 +126,7 @@ def process_sentence():
         layer = int(req_data.get('layer', 5))
         head = int(req_data.get('head', 0))
         
-        # Create a Future object to communicate between threads
         future = Future()
-        
-        # Push job to queue
         execution_queue.put((future, {
             'sentence': sentence,
             'layer': layer,
@@ -142,14 +134,39 @@ def process_sentence():
             'max_tokens': 512
         }))
         
-        # Wait for the result (This blocks the HTTP request until the worker finishes)
-        # We can add a timeout here if desired (e.g., future.result(timeout=60))
         results, was_truncated = future.result()
+
+        # --- OUTLIER DETECTION LOGIC ---
+        suggested_range = None
+        y_vals = [d['y'] for d in results]
+        
+        # Only apply logic if we have enough data points
+        if len(y_vals) > 5:
+            # Calculate Quartiles
+            q75, q25 = np.percentile(y_vals, [75 ,25])
+            iqr = q75 - q25
+            
+            # Define bounds (1.5 * IQR is standard for outliers)
+            lower_bound = q25 - (1.5 * iqr)
+            upper_bound = q75 + (1.5 * iqr)
+            
+            # Find the actual data range within these bounds
+            inliers = [y for y in y_vals if lower_bound <= y <= upper_bound]
+            
+            if inliers:
+                # Add 5% padding for visual comfort
+                min_in = min(inliers)
+                max_in = max(inliers)
+                padding = (max_in - min_in) * 0.05
+                if padding == 0: padding = 1.0 # Handle flat lines
+                
+                suggested_range = [min_in - padding, max_in + padding]
 
         return jsonify({
             "status": "success", 
             "data": results, 
-            "truncated": was_truncated
+            "truncated": was_truncated,
+            "suggested_range": suggested_range
         })
 
     except Exception as e:
