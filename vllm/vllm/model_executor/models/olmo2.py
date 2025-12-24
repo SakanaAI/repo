@@ -41,8 +41,10 @@ from vllm.distributed.utils import split_tensor_along_last_dim
 from vllm.model_executor.layers.activation import SiluAndMul
 from vllm.model_executor.layers.layernorm import RMSNorm
 from vllm.model_executor.layers.linear import (MergedColumnParallelLinear,
+                                               ColumnParallelLinear,
                                                QKVParallelLinear,
-                                               RowParallelLinear)
+                                               RowParallelLinear,
+                                               ReplicatedLinear)
 from vllm.model_executor.layers.logits_processor import LogitsProcessor
 from vllm.model_executor.layers.rotary_embedding import get_rope
 from vllm.model_executor.layers.vocab_parallel_embedding import (
@@ -164,27 +166,24 @@ class Olmo2Attention(nn.Module):
         )
         self.dynamic_pe_mode = dynamic_pe_mode
         if self.dynamic_pe_mode in [DynamicPeMode.C, DynamicPeMode.CWSC]:
-            self.dynamic_map = RowParallelLinear(
+            self.dynamic_map = ReplicatedLinear(
                 self.config.hidden_size, 1, bias=False,
                 quant_config=vllm_config.quant_config,
                 prefix=f"{prefix}.dynamic_map",
             )
         elif self.dynamic_pe_mode == DynamicPeMode.MHC:
-            self.dynamic_map = RowParallelLinear(
+            self.dynamic_map = ColumnParallelLinear(
                 self.config.hidden_size, self.total_num_heads, bias=False,
                 quant_config=vllm_config.quant_config,
                 prefix=f"{prefix}.dynamic_map",
             )
         elif self.dynamic_pe_mode == DynamicPeMode.SEXMH:
             mid_size = self.config.hidden_size // 8
-            self.gate_map = RowParallelLinear(
-                self.config.hidden_size, mid_size, bias=False,
-                quant_config=vllm_config.quant_config, prefix=f"{prefix}.gate_map"
+            self.gate_content_map = MergedColumnParallelLinear(
+                self.config.hidden_size, [mid_size] * 2, bias=False,
+                quant_config=vllm_config.quant_config, prefix=f"{prefix}.gate_content_map"
             )
-            self.content_map = RowParallelLinear(
-                self.config.hidden_size, mid_size, bias=False,
-                quant_config=vllm_config.quant_config, prefix=f"{prefix}.content_map"
-            )
+            self.dynamic_pe_act_fn = SiluAndMul()
             self.final_map = RowParallelLinear(
                 mid_size, self.total_num_heads, bias=False,
                 quant_config=vllm_config.quant_config, prefix=f"{prefix}.final_map"
@@ -193,21 +192,32 @@ class Olmo2Attention(nn.Module):
     def dynamic_position_encoding_swigluex_multihead(self, hidden_states, position_ids):
         device, dtype = hidden_states.device, hidden_states.dtype
         # [B*N, D] -> [B*N, H]
-        pred_indices = self.final_map(F.silu(self.gate_map(hidden_states)[0]) * self.content_map(hidden_states)[0])[0]
+        full_pred_indices = self.final_map(self.dynamic_pe_act_fn(self.gate_content_map(hidden_states)[0]))[0]
+
+        tp_world_size = get_tensor_model_parallel_world_size()
+        tp_rank = get_tensor_model_parallel_rank()
+
+        if tp_world_size > 1:
+            local_num_heads = self.total_num_heads // tp_world_size
+            start_idx = tp_rank * local_num_heads
+            end_idx = (tp_rank + 1) * local_num_heads
+            pred_indices = full_pred_indices[:, start_idx:end_idx]
+        else:
+            pred_indices = full_pred_indices
         return pred_indices
 
     def dynamic_position_encoding_continuous(self, hidden_states, position_ids):
         # hidden_states [B, L, D]
         # pe [B, P, D], where P >= L
         device, dtype = hidden_states.device, hidden_states.dtype
-        pred_indices = self.dynamic_map(hidden_states)[0].squeeze(-1)
+        pred_indices = self.dynamic_map(hidden_states).squeeze(-1)
         return pred_indices
 
     def dynamic_position_encoding_multihead_continuous(self, hidden_states, position_ids):
         # hidden_states [B, L, D]
         # pe [B, P, D], where P >= L
         device, dtype = hidden_states.device, hidden_states.dtype
-        pred_indices = self.dynamic_map(hidden_states)[0]
+        pred_indices = self.dynamic_map(hidden_states)
         return pred_indices
 
     def _apply_qk_norm(self, q: torch.Tensor,
@@ -435,6 +445,8 @@ class Olmo2Model(nn.Module):
             ("qkv_proj", "v_proj", "v"),
             ("gate_up_proj", "gate_proj", 0),
             ("gate_up_proj", "up_proj", 1),
+            ("gate_content_map", "gate_map", 0),
+            ("gate_content_map", "content_map", 1),
         ]
 
         params_dict = dict(self.named_parameters(remove_duplicate=False))
@@ -523,3 +535,4 @@ class Olmo2ForCausalLM(nn.Module, SupportsPP):
                            if self.config.tie_word_embeddings else None),
         )
         return loader.load_weights(weights)
+
