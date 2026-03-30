@@ -111,13 +111,17 @@ We provide pre-trained weights on Hugging Face.
 
 ### Quick Inference
 
-Please download the checkpoints from [huggingface](https://huggingface.co/huayangli/OLMo2-1B-RePo) in adavance:
+Please download the 1B model from [huggingface](https://huggingface.co/huayangli/OLMo2-1B-RePo) in adavance:
 
 ```bash
 cd olmes
-python scripts/hf_download.py # only download for the first use
-bash eval_ruler.sh
+python scripts/hf_download_1b.py # only download for the first use
+bash run_eval_1b.sh
 ```
+
+The scripts for the evaluation of 7B model are also provided under olmes.
+
+> We will upload the checkpoint of 7B model soon.
 
 ## 🏋️ Training
 
@@ -127,6 +131,8 @@ Please take a look at the script `OLMo/batch_run_stage2_1b.sh`, you need to repl
 cd OLMo
 SLURM_ARRAY_TASK_ID=2 bash batch_run_stage2_1b.sh -d $YOUR_DATA_DIR
 ```
+
+If you want to train 7B model, please check `OLMo/batch_run_stage2_7b.sh` and pre-download the stage-1 checkpoint of 7B model, because online downloading is super slow.
 
 
 ## 📜 Citation
