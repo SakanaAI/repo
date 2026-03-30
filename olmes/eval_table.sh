@@ -21,11 +21,16 @@ PY_BIN=${CONDA_ROOT_DIR}/${SUFFIX}/bin
 
 
 CURRENT_DATE=$(date +"%y%m%d")
-OUTPUT_DIR=results_hist/${CURRENT_DATE}_table_results
-rm -rf $OUTPUT_DIR
+CAT=table
+OUTPUT_DIR=results_hist/$CAT
 
-MODEL_DIR=../OLMo/hf_ckpts
-MODEL=OLMo2-1B-stage2-seed42-SEXMH-L5
-STEP=step23852-unsharded
+MODEL_PATH=$1
+MODEL_NAME=$2
+HF_UPLOAD=$3
+
 TASK=hybridqa:none
-CUDA_VISIBLE_DEVICES=0 olmes --task $TASK --batch-size 10000 --model $MODEL_DIR/$MODEL/$STEP --model-args "{\"model_path\": \"$MODEL_DIR/$MODEL/$STEP\", \"max_length\": 4096, \"model_type\": \"vllm\"}"  --output-dir $OUTPUT_DIR/${MODEL//\//_}/$TASK --save-raw-requests true --num-workers 1 --gpus 1
+CUDA_VISIBLE_DEVICES=0 olmes --task $TASK --batch-size 10000 --model $MODEL_PATH --model-args "{\"model_path\": \"$MODEL_PATH\", \"max_length\": 4096, \"model_type\": \"vllm\"}"  --output-dir $OUTPUT_DIR/${MODEL_NAME//\//_}/$TASK --save-raw-requests true --num-workers 1 --gpus 1
+if [ "$HF_UPLOAD" = "true" ]; then
+    echo "Uploading Scores to HF"
+    hf upload ghrua/OLMo2-7B-Logs $OUTPUT_DIR/${MODEL_NAME//\//_}/$TASK/metrics-all.jsonl $OUTPUT_DIR/${MODEL_NAME//\//_}/$TASK/metrics-all.jsonl
+fi
