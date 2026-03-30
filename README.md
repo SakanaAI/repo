@@ -142,7 +142,7 @@ If you find this project useful, please cite our paper:
 ```bibtex
 @article{sakana2025repo,
   title={RePo: Language Models with Context Re-Positioning},
-  author={Huayang Li, Tianyu Zhao, and Richard Sproat},
+  author={Huayang Li, Tianyu Zhao, Deng Cai, and Richard Sproat},
   year={2025},
   eprint={2512.14391},
   archivePrefix={arXiv},
